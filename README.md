@@ -1,38 +1,39 @@
 # homebridge-laskomex-doorbell
 
-Vystaví domofon Laskomex osazený modulem **Smart Unifon** (projekt
+Brings a Laskomex intercom fitted with the **Smart Unifon** module (the
 [Smart Domofon](https://ediycraft.blogspot.com/2020/06/smart-domofon.html)
-od Dawida Radke) do HomeKitu přes MQTT.
+project by Dawid Radke) into HomeKit over MQTT.
 
-Vytvoří samostatná příslušenství, aby se v Apple Home dala ovládat
-každé zvlášť a šlo na ně vázat automatizace:
+It creates separate accessories, so each one gets its own tile in the Home
+app and can be used in automations:
 
-| příslušenství | HomeKit služba | k čemu |
+| accessory | HomeKit service | purpose |
 |---|---|---|
-| `… zvonek` | `Doorbell` nebo `MotionSensor` | notifikace „někdo zvoní“ |
-| `… zamek` | `LockMechanism` | otevření elektrozámku |
-| `… ticho` | `Switch` | ztišení vyzvánění |
-| `… auto otevirani` | `Switch` | automatické otevírání v modulu |
+| `… Doorbell` | `Doorbell` or `MotionSensor` | "someone is ringing" notification |
+| `… Lock` | `LockMechanism` | releases the door strike |
+| `… Do Not Disturb` | `Switch` | mutes the handset ringer |
+| `… Auto Open` | `Switch` | the module's automatic door opening |
 
-Zámek a přepínače se vytvoří jen tehdy, když k nim je vyplněný topic
-(ve výchozím stavu jsou vyplněné všechny).
+The lock and the switches are only created when their topic is set (all of
+them are set by default).
 
-## Instalace
+## Installation
+
+Search for `homebridge-laskomex-doorbell` in the Homebridge UI, or:
 
 ```bash
 sudo npm install -g homebridge-laskomex-doorbell
 ```
 
-## Konfigurace
+## Configuration
 
-Topicy jsou **předvyplněné** podle manuálu Smart Unifon (SW 2.7.2), takže
-stačí vyplnit broker. Nastavit jde v Homebridge UI (plugin má
-`config.schema.json`), nebo ručně:
+Topics are **prefilled** according to the Smart Unifon manual (SW 2.7.2), so
+only the broker is required. Configure it in the Homebridge UI, or by hand:
 
 ```json
 {
   "platform": "LaskomexDoorbell",
-  "name": "Domofon",
+  "name": "Intercom",
   "doorbellType": "doorbell",
   "callNumber": 12,
   "broker": {
@@ -59,35 +60,47 @@ stačí vyplnit broker. Nastavit jde v Homebridge UI (plugin má
 }
 ```
 
-Měnit je potřeba jen tehdy, když má modul jiný název než `smart-unifon`
-(prefix = název zařízení v ESPHome).
+Topics only need changing when the module's ESPHome device name is not
+`smart-unifon` (the name is the topic prefix).
 
-**Pozor na dvě podtržítka** v `doorbell__ring_` — tak to ESPHome odvodil
-z názvu entity „Doorbell (RING)“, není to překlep.
+**Mind the double underscore** in `doorbell__ring_` — ESPHome derived it from
+the entity name "Doorbell (RING)", it is not a typo.
 
-**Otevírání je typ `button`, ne `switch`**, takže payload je `PRESS`, nikoli
-`ON`.
+**Door release is a `button`, not a `switch`**, so the payload is `PRESS`,
+not `ON`.
 
-## Ostatní topicy modulu
+Accessory names default to `<name> Doorbell`, `<name> Lock`,
+`<name> Do Not Disturb` and `<name> Auto Open`. Override any of them with:
 
-Plugin je nepoužívá, ale hodí se vědět, že existují (stav se čte z `…/state`,
-nastavuje publikací na `…/command`):
+```json
+"names": {
+  "doorbell": "Front Door Bell",
+  "lock": "Front Door",
+  "dnd": "Intercom Mute",
+  "autoOpen": "Intercom Auto Open"
+}
+```
+
+## Other module topics
+
+Not used by the plugin, but useful to know (state is read from `…/state`,
+set by publishing to `…/command`):
 
 ```
 smart-unifon/status                                 online / offline
-smart-unifon/binary_sensor/doorbell__ring_/state    zvonění
-smart-unifon/binary_sensor/additional_button/state  tlačítko na BEX
+smart-unifon/binary_sensor/doorbell__ring_/state    ringing
+smart-unifon/binary_sensor/additional_button/state  button on BEX
 smart-unifon/button/open_door/command               PRESS
-smart-unifon/switch/mute/state                      ztišení
-smart-unifon/switch/auto_open_door/state            automatické otevírání
-smart-unifon/switch/auto_open__ring_/state          auto otevírání dle RING
-smart-unifon/switch/door___gate/state               dveře + brána zároveň
-smart-unifon/switch/scheduler_active/state          časovač ztišení
+smart-unifon/switch/mute/state                      mute
+smart-unifon/switch/auto_open_door/state            automatic opening
+smart-unifon/switch/auto_open__ring_/state          auto open on RING
+smart-unifon/switch/door___gate/state               door + gate together
+smart-unifon/switch/scheduler_active/state          mute scheduler
 smart-unifon/switch/auto_open_scheduler_active/state
 smart-unifon/switch/mute_inverted/state
 smart-unifon/switch/ring_inverted/state
 smart-unifon/switch/debugger/state
-smart-unifon/number/call_number/state               číslo bytu pro auto-open
+smart-unifon/number/call_number/state               flat number for auto open
 smart-unifon/number/mute_at/state
 smart-unifon/number/unmute_at/state
 smart-unifon/number/auto_open_from_hour/state
@@ -104,50 +117,54 @@ smart-unifon/sensor/time/state
 smart-unifon/sensor/esphome_version/state
 ```
 
-Nastavení příkladem:
+For example:
 
 ```bash
 mosquitto_pub -t "smart-unifon/switch/mute/command" -m "ON"
 mosquitto_pub -t "smart-unifon/button/open_door/command" -m "PRESS"
 ```
 
-Modul má i webové rozhraní na `http://smart-unifon.local/`, kde je vidět
-totéž včetně logu a OTA aktualizace.
+The module also has a web interface at `http://smart-unifon.local/` with the
+same data, a log and OTA updates.
 
-## Poznámky k chování
+## How it behaves
 
-**Zvonek jako pohybový senzor.** HomePod oznamuje zvonky globálně a nejde
-to vypnout pro jedno příslušenství. Kdo má ještě jiný zvonek, který na
-HomePodu zvonit má, a tenhle ne, nastaví `"doorbellType": "motion"`.
-Notifikace se pak zapíná u příslušenství v Apple Home.
+**Doorbell as a motion sensor.** HomePods announce doorbells globally and it
+cannot be turned off for a single accessory. If you have another doorbell
+that should ring on HomePods and this one should not, set
+`"doorbellType": "motion"` and enable notifications for the accessory in the
+Home app.
 
-**Otevření kódem vs. zvonění.** Modul hlásí obojí stejně, liší se jen délka
-signálu `RING`: otevření kódem dává u LM-8 (CD-2501) konstantně ~8,7 s,
-zvonění je kratší, nebo naopak delší podle délky stisku. Signál v rozmezí
-`codeRingMinSeconds`–`codeRingMaxSeconds` se proto ignoruje. Dlouhé zvonění
-se ohlásí hned po překročení horní hranice, nečeká se na konec. Na jiné
-sestavě si délky ověř v logu (`Otevřeno kódem (signál … s)`).
+**Code opening vs. ringing.** The module reports both the same way; only the
+length of the `RING` signal differs. On an LM-8 (CD-2501) a keypad code
+opening gives a constant ~8.7 s, while a ring is shorter, or longer depending
+on how long the button is held. A signal between `codeRingMinSeconds` and
+`codeRingMaxSeconds` is therefore ignored. A long ring is reported as soon as
+it passes the upper limit, without waiting for it to end. On a different
+setup, check the actual lengths in the log (`Opened with code (signal … s)`).
 
-**Volání sousedům.** Modul čte číslo každého volaného bytu. S vyplněným
-`callNumber` se ohlásí jen zvonění na tvoje číslo.
+**Calls to neighbours.** The module decodes the number of every flat being
+called. With `callNumber` set, only rings for your flat are reported.
 
-**Po restartu nezvoní.** Retained zprávy z brokeru se ignorují, reaguje se
-jen na přechod `OFF → ON`.
+**No ring after restart.** Retained broker messages are ignored; only an
+`OFF → ON` transition counts.
 
-**Otevření spustí celou sekvenci.** Podle manuálu `Open Door` zvedne
-sluchátko, otevře dveře a zavěsí — není to jen sepnutí kontaktu.
+**Opening runs a full sequence.** According to the manual, `Open Door` picks
+up the handset, releases the door and hangs up — it is not just a relay
+pulse.
 
-**Otevřít jde jen krátce po zazvonění.** Digitální domofony Laskomex pustí
-elektrozámek až poté, co někdo zavolá z venkovního tabla. Když otevřeš mimo
-okno `ringWindowSeconds`, plugin zapíše varování do logu, ale příkaz stejně
-pošle (`warnIfNoRing: false` to vypne).
+**The door only opens shortly after a ring.** Digital Laskomex intercoms
+release the strike only after someone has called from the outdoor panel.
+Opening outside `ringWindowSeconds` logs a warning but still sends the
+command (`warnIfNoRing: false` turns the warning off).
 
-**Zámek nemá zpětnou vazbu.** `open_door` je tlačítko, takže se
-`LockMechanism` po `relockSeconds` sám vrátí do „zamčeno“. Není to skutečný
-stav dveří, jen odraz odeslaného povelu.
+**The lock has no feedback.** `open_door` is a button, so the
+`LockMechanism` returns to "locked" by itself after `relockSeconds`. It
+reflects the command sent, not the real state of the door.
 
-**Video nebude.** `Doorbell` bez kamery dá notifikaci, ne obraz.
+**No video.** `Doorbell` without a camera gives a notification, not a
+picture.
 
-## Licence
+## License
 
 MIT

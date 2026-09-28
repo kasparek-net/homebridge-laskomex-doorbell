@@ -2,40 +2,40 @@
   "pluginAlias": "LaskomexDoorbell",
   "pluginType": "platform",
   "singular": true,
-  "headerDisplay": "Vystaví Laskomex domofon s ESPHome modulem do HomeKitu: zvonek, otevírání dveří a režim nerušit přes MQTT.",
-  "footerDisplay": "Topicy jsou předvyplněné podle manuálu Smart Unifon (SW 2.7.2). Měnit jen pokud má modul jiný název než \"smart-unifon\".",
+  "headerDisplay": "Brings a Laskomex intercom with the Smart Unifon ESPHome module into HomeKit over MQTT: doorbell, door release, do-not-disturb and auto-open.",
+  "footerDisplay": "Topics are prefilled according to the Smart Unifon manual (SW 2.7.2). Only change them if the module's ESPHome name is not \"smart-unifon\".",
   "schema": {
     "type": "object",
     "properties": {
       "name": {
-        "title": "Název",
+        "title": "Name",
         "type": "string",
-        "default": "Domofon",
+        "default": "Intercom",
         "required": true,
-        "description": "Použije se jako základ jmen v Apple Home (např. „Domofon zvonek“)."
+        "description": "Base for accessory names in the Home app (e.g. \"Intercom Doorbell\")."
       },
       "doorbellType": {
-        "title": "Typ zvonku v HomeKitu",
+        "title": "Doorbell type in HomeKit",
         "type": "string",
         "default": "doorbell",
         "oneOf": [
           {
-            "title": "Zvonek (Doorbell) — HomePod oznamuje",
+            "title": "Doorbell — announced on HomePods",
             "enum": [
               "doorbell"
             ]
           },
           {
-            "title": "Pohybový senzor (MotionSensor) — HomePod mlčí",
+            "title": "Motion sensor — silent on HomePods",
             "enum": [
               "motion"
             ]
           }
         ],
-        "description": "HomePod oznamuje zvonky globálně a nejde to vypnout pro jedno příslušenství. Pohybový senzor dá jen notifikaci."
+        "description": "HomePods announce doorbells globally and it cannot be turned off for one accessory. A motion sensor only sends a notification."
       },
       "motionSeconds": {
-        "title": "Délka „pohybu“ při zvonění (s)",
+        "title": "Motion duration on ring (s)",
         "type": "integer",
         "default": 5,
         "minimum": 1,
@@ -45,17 +45,44 @@
         }
       },
       "callNumber": {
-        "title": "Číslo bytu",
+        "title": "Flat number",
         "type": "integer",
         "required": false,
-        "description": "Zvonění se ohlásí jen při volání na toto číslo. Prázdné = každé zvonění."
+        "description": "Only report rings for calls to this flat. Empty = every ring."
+      },
+      "names": {
+        "title": "Accessory names",
+        "type": "object",
+        "description": "Optional. Defaults to \"<Name> Doorbell\", \"<Name> Lock\", \"<Name> Do Not Disturb\" and \"<Name> Auto Open\".",
+        "properties": {
+          "doorbell": {
+            "title": "Doorbell",
+            "type": "string",
+            "required": false
+          },
+          "lock": {
+            "title": "Lock",
+            "type": "string",
+            "required": false
+          },
+          "dnd": {
+            "title": "Do not disturb",
+            "type": "string",
+            "required": false
+          },
+          "autoOpen": {
+            "title": "Auto open",
+            "type": "string",
+            "required": false
+          }
+        }
       },
       "broker": {
         "title": "MQTT broker",
         "type": "object",
         "properties": {
           "host": {
-            "title": "Adresa",
+            "title": "Host",
             "type": "string",
             "required": true,
             "placeholder": "192.168.1.10"
@@ -67,12 +94,12 @@
             "required": true
           },
           "username": {
-            "title": "Uživatel",
+            "title": "Username",
             "type": "string",
             "required": false
           },
           "password": {
-            "title": "Heslo",
+            "title": "Password",
             "type": "string",
             "required": false,
             "x-schema-form": {
@@ -82,84 +109,84 @@
         }
       },
       "topics": {
-        "title": "MQTT topicy",
+        "title": "MQTT topics",
         "type": "object",
         "properties": {
           "ring": {
-            "title": "Zvonění (odběr)",
+            "title": "Ring (subscribe)",
             "type": "string",
             "required": true,
             "placeholder": "smart-unifon/binary_sensor/doorbell__ring_/state"
           },
           "openDoor": {
-            "title": "Otevření dveří (publikace)",
+            "title": "Open door (publish)",
             "type": "string",
             "required": false,
             "placeholder": "smart-unifon/button/open_door/command",
-            "description": "Nech prázdné, pokud zámek v HomeKitu nechceš."
+            "description": "Leave empty if you don't want the lock in HomeKit."
           },
           "openDoorPayload": {
-            "title": "Payload pro otevření",
+            "title": "Open door payload",
             "type": "string",
             "default": "PRESS",
-            "description": "Otevírání je v ESPHome typ \"button\", takže payload je PRESS (ne ON)."
+            "description": "Door release is an ESPHome \"button\", so the payload is PRESS (not ON)."
           },
           "dndCommand": {
-            "title": "Nerušit — příkaz (publikace)",
+            "title": "Do not disturb — command (publish)",
             "type": "string",
             "required": false,
-            "description": "Nech prázdné, pokud přepínač nerušit nechceš.",
+            "description": "Leave empty if you don't want the do-not-disturb switch.",
             "placeholder": "smart-unifon/switch/mute/command"
           },
           "dndState": {
-            "title": "Nerušit — stav (odběr)",
+            "title": "Do not disturb — state (subscribe)",
             "type": "string",
             "required": false,
             "placeholder": "smart-unifon/switch/mute/state"
           },
           "dndOnPayload": {
-            "title": "Payload zapnuto",
+            "title": "On payload",
             "type": "string",
             "default": "ON"
           },
           "dndOffPayload": {
-            "title": "Payload vypnuto",
+            "title": "Off payload",
             "type": "string",
             "default": "OFF"
           },
           "availability": {
-            "title": "Dostupnost modulu (odběr)",
+            "title": "Module availability (subscribe)",
             "type": "string",
             "required": false,
             "placeholder": "smart-unifon/status"
           },
           "availablePayload": {
-            "title": "Payload online",
+            "title": "Online payload",
             "type": "string",
             "default": "online"
           },
           "decoder": {
-            "title": "Číslo volaného bytu (odběr)",
+            "title": "Called flat number (subscribe)",
             "type": "string",
             "required": false,
             "placeholder": "smart-unifon/sensor/decoder/state",
-            "description": "Spolu s „Číslo bytu“ odfiltruje volání sousedům."
+            "description": "Used with \"Flat number\" to ignore calls to neighbours."
           },
           "decodingSuccessful": {
-            "title": "Úspěšné dekódování (odběr)",
+            "title": "Decoding successful (subscribe)",
             "type": "string",
             "required": false,
             "placeholder": "smart-unifon/binary_sensor/decoding_successful/state"
           },
           "autoOpenCommand": {
-            "title": "Automatické otevírání — příkaz (publikace)",
+            "title": "Auto open — command (publish)",
             "type": "string",
             "required": false,
             "placeholder": "smart-unifon/switch/auto_open_door/command",
-            "description": "Nech prázdné, pokud přepínač automatického otevírání nechceš."
+            "description": "Leave empty if you don't want the auto-open switch."
           },
           "autoOpenState": {
-            "title": "Automatické otevírání — stav (odběr)",
+            "title": "Auto open — state (subscribe)",
             "type": "string",
             "required": false,
             "placeholder": "smart-unifon/switch/auto_open_door/state"
@@ -167,45 +194,45 @@
         }
       },
       "ringPayload": {
-        "title": "Payload zvonění",
+        "title": "Ring payload",
         "type": "string",
         "default": "ON",
-        "description": "Hodnota v ring topicu, která znamená „zvoní“."
+        "description": "Value in the ring topic that means \"ringing\"."
       },
       "codeRingMinSeconds": {
-        "title": "Otevření kódem — signál od (s)",
+        "title": "Code opening — signal from (s)",
         "type": "number",
         "default": 8,
-        "description": "Modul hlásí otevření kódem stejně jako zvonění, liší se jen délkou signálu RING. Signál v tomto rozmezí se bere jako kód a ignoruje se."
+        "description": "The module reports a keypad code opening like a ring; only the RING signal length differs. Signals in this range are treated as a code and ignored."
       },
       "codeRingMaxSeconds": {
-        "title": "Otevření kódem — signál do (s)",
+        "title": "Code opening — signal to (s)",
         "type": "number",
         "default": 10
       },
       "relockSeconds": {
-        "title": "Návrat zámku do zamčeno (s)",
+        "title": "Relock after (s)",
         "type": "integer",
         "default": 5,
         "minimum": 1,
         "maximum": 60,
-        "description": "Domofon otevírá impulsem a stav nehlásí zpět, takže se zámek v HomeKitu po této době sám vrátí."
+        "description": "The intercom opens with a pulse and reports no state, so the lock returns to locked in HomeKit after this time."
       },
       "ringWindowSeconds": {
-        "title": "Okno po zvonění (s)",
+        "title": "Window after ring (s)",
         "type": "integer",
         "default": 60,
         "minimum": 5,
         "maximum": 600,
-        "description": "Digitální domofon otevře jen krátce po vyzvánění z tabla. Mimo toto okno plugin zapíše varování do logu."
+        "description": "A digital intercom only opens shortly after a call from the outdoor panel. Outside this window the plugin logs a warning."
       },
       "warnIfNoRing": {
-        "title": "Varovat při otevírání bez zvonění",
+        "title": "Warn when opening without a ring",
         "type": "boolean",
         "default": true
       },
       "model": {
-        "title": "Model (kosmetika v Apple Home)",
+        "title": "Model (shown in the Home app)",
         "type": "string",
         "default": "LM-8 smart module"
       }

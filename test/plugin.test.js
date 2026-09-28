@@ -129,7 +129,7 @@ test('registers doorbell, lock, dnd and auto-open accessories', () => {
   const { api, client } = start(baseConfig);
   assert.deepStrictEqual(
     api.registered.map((a) => a.displayName),
-    ['Vchod zvonek', 'Vchod zamek', 'Vchod ticho', 'Vchod auto otevirani'],
+    ['Vchod Doorbell', 'Vchod Lock', 'Vchod Do Not Disturb', 'Vchod Auto Open'],
   );
   assert.ok(client.subscribed.includes('smart-unifon/binary_sensor/doorbell__ring_/state'));
 });
@@ -199,4 +199,9 @@ test('dnd switch publishes and follows state topic', async () => {
   assert.deepStrictEqual(client.published.at(-1), ['smart-unifon/switch/mute/command', 'ON']);
   platform.handleMessage(platform.topics.dndState, 'OFF', false);
   assert.strictEqual(platform.dndOn, false);
+});
+
+test('names override default accessory names', () => {
+  const { api } = start({ ...baseConfig, names: { doorbell: 'Vchod zvonek', lock: 'Vchod zamek' } });
+  assert.deepStrictEqual(api.registered.map((a) => a.displayName).slice(0, 2), ['Vchod zvonek', 'Vchod zamek']);
 });

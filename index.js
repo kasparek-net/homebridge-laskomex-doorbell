@@ -25,7 +25,7 @@ class LaskomexDoorbellPlatform {
     this.client = null;
     this.lastRingAt = 0;
 
-    this.name = this.config.name || 'Domofon';
+    this.name = this.config.name || 'Intercom';
     this.relockSeconds = numberOr(this.config.relockSeconds, 5);
     this.ringWindowSeconds = numberOr(this.config.ringWindowSeconds, 60);
     this.warnIfNoRing = this.config.warnIfNoRing !== false;
@@ -57,14 +57,14 @@ class LaskomexDoorbellPlatform {
     this.ringPayload = this.config.ringPayload || 'ON';
 
     if (!this.config.broker || !this.config.broker.host) {
-      this.log.error('Chybí broker.host v konfiguraci — plugin se nespustí.');
+      this.log.error('broker.host is missing in the config — the plugin will not start.');
       return;
     }
     if (!this.topics.ring && !this.topics.decodingSuccessful) {
-      this.log.warn('Není nastavený žádný zdroj zvonění (ring ani decodingSuccessful).');
+      this.log.warn('No ring source is configured (neither ring nor decodingSuccessful).');
     }
     if (this.topics.decodingSuccessful && !this.callNumber) {
-      this.log.warn('callNumber není nastavené — zvonek se ozve i při volání sousedům.');
+      this.log.warn('callNumber is not set — calls to neighbours will ring too.');
     }
 
     this.api.on('didFinishLaunching', () => {
@@ -85,23 +85,23 @@ class LaskomexDoorbellPlatform {
     const names = this.config.names || {};
     const nameFor = (key, fallback) => names[key] || `${this.name} ${fallback}`;
 
-    const bellName = nameFor('doorbell', 'zvonek');
-    // motion = HomePod zvonek neoznamuje, doorbell = oznamuje (nelze vypnout pro jedno prislusenstvi)
+    const bellName = nameFor('doorbell', 'Doorbell');
+    // HomePods announce Doorbell services globally; MotionSensor keeps them silent
     this.bellIsMotion = String(this.config.doorbellType || 'doorbell').toLowerCase() === 'motion';
 
     this.doorbell = this.ensureAccessory(
       'doorbell', bellName, this.bellIsMotion ? Categories.SENSOR : Categories.VIDEO_DOORBELL,
     );
 
-    const chtena = this.bellIsMotion ? Service.MotionSensor : Service.Doorbell;
-    const nechtena = this.bellIsMotion ? Service.Doorbell : Service.MotionSensor;
-    const zbyla = this.doorbell.getService(nechtena);
-    if (zbyla && this.doorbell.removeService) {
-      this.doorbell.removeService(zbyla);
-      this.log.info(`Typ zvonku změněn na ${this.bellIsMotion ? 'MotionSensor' : 'Doorbell'}.`);
+    const wanted = this.bellIsMotion ? Service.MotionSensor : Service.Doorbell;
+    const unwanted = this.bellIsMotion ? Service.Doorbell : Service.MotionSensor;
+    const leftover = this.doorbell.getService(unwanted);
+    if (leftover && this.doorbell.removeService) {
+      this.doorbell.removeService(leftover);
+      this.log.info(`Doorbell type changed to ${this.bellIsMotion ? 'MotionSensor' : 'Doorbell'}.`);
     }
 
-    const bell = this.doorbell.getService(chtena) || this.doorbell.addService(chtena, bellName);
+    const bell = this.doorbell.getService(wanted) || this.doorbell.addService(wanted, bellName);
     bell.setPrimaryService(true);
     this.bellService = bell;
 
@@ -111,7 +111,7 @@ class LaskomexDoorbellPlatform {
     }
 
     if (this.topics.openDoor) {
-      const lockName = nameFor('lock', 'zamek');
+      const lockName = nameFor('lock', 'Lock');
       this.lock = this.ensureAccessory('lock', lockName, Categories.DOOR_LOCK);
       const lockService = this.lock.getService(Service.LockMechanism)
         || this.lock.addService(Service.LockMechanism, lockName);
@@ -127,7 +127,7 @@ class LaskomexDoorbellPlatform {
     }
 
     if (this.topics.dndCommand) {
-      const dndName = nameFor('dnd', 'ticho');
+      const dndName = nameFor('dnd', 'Do Not Disturb');
       this.dnd = this.ensureAccessory('dnd', dndName, Categories.SWITCH);
       const dndService = this.dnd.getService(Service.Switch)
         || this.dnd.addService(Service.Switch, dndName);
@@ -141,7 +141,7 @@ class LaskomexDoorbellPlatform {
     }
 
     if (this.topics.autoOpenCommand) {
-      const autoName = nameFor('autoOpen', 'auto otevirani');
+      const autoName = nameFor('autoOpen', 'Auto Open');
       this.autoOpen = this.ensureAccessory('autoopen', autoName, Categories.SWITCH);
       const autoService = this.autoOpen.getService(Service.Switch)
         || this.autoOpen.addService(Service.Switch, autoName);
@@ -152,9 +152,9 @@ class LaskomexDoorbellPlatform {
         .onSet(async (v) => {
           this.autoOpenOn = Boolean(v);
           if (this.autoOpenOn) {
-            this.log.warn('Automatické otevírání ZAPNUTO — komukoli, kdo zazvoní, se otevře.');
+            this.log.warn('Auto open is ON — the door will open for anyone who rings.');
           } else {
-            this.log.info('Automatické otevírání vypnuto.');
+            this.log.info('Auto open is off.');
           }
           this.publish(this.topics.autoOpenCommand, this.autoOpenOn ? 'ON' : 'OFF');
         });
@@ -176,7 +176,7 @@ class LaskomexDoorbellPlatform {
       accessory = new this.api.platformAccessory(displayName, uuid, category);
       this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
       this.accessories.push(accessory);
-      this.log.info(`Přidáno příslušenství: ${displayName}`);
+      this.log.info(`Added accessory: ${displayName}`);
     }
 
     accessory.category = category;
@@ -198,7 +198,7 @@ class LaskomexDoorbellPlatform {
     if (stale.length) {
       this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, stale);
       this.accessories = this.accessories.filter((a) => live.includes(a.UUID));
-      stale.forEach((a) => this.log.info(`Odebráno nepoužívané příslušenství: ${a.displayName}`));
+      stale.forEach((a) => this.log.info(`Removed unused accessory: ${a.displayName}`));
     }
   }
 
@@ -216,21 +216,21 @@ class LaskomexDoorbellPlatform {
     });
 
     this.client.on('connect', () => {
-      this.log.info(`Připojeno k MQTT ${url}`);
+      this.log.info(`Connected to MQTT ${url}`);
       [this.topics.ring, this.topics.dndState, this.topics.availability,
         this.topics.decoder, this.topics.decodingSuccessful, this.topics.autoOpenState]
         .filter(Boolean)
         .forEach((t) => this.client.subscribe(t, (err) => {
-          if (err) this.log.error(`Nelze odebírat ${t}: ${err.message}`);
+          if (err) this.log.error(`Cannot subscribe to ${t}: ${err.message}`);
         }));
     });
 
     this.client.on('message', (topic, payload, packet) => {
       this.handleMessage(topic, payload.toString().trim(), Boolean(packet && packet.retain));
     });
-    this.client.on('error', (err) => this.log.error(`Chyba MQTT: ${err.message}`));
+    this.client.on('error', (err) => this.log.error(`MQTT error: ${err.message}`));
     this.client.on('reconnect', () => this.log.debug('MQTT reconnect…'));
-    this.client.on('close', () => this.log.debug('MQTT spojení zavřeno'));
+    this.client.on('close', () => this.log.debug('MQTT connection closed'));
   }
 
   handleMessage(topic, value, retained) {
@@ -240,29 +240,29 @@ class LaskomexDoorbellPlatform {
     }
 
     if (topic === this.topics.ring) {
-      const zvoni = value === this.ringPayload;
-      const predtim = this.ringWasOn;
-      this.ringWasOn = zvoni;
+      const ringing = value === this.ringPayload;
+      const wasRinging = this.ringWasOn;
+      this.ringWasOn = ringing;
       if (retained) return;
 
-      if (zvoni && !predtim) {
+      if (ringing && !wasRinging) {
         this.ringStartedAt = Date.now();
-        // dlouhe zvoneni: neceka se na konec, ohlasi se po prekroceni horni hranice
+        // long ring: report once it passes the upper limit instead of waiting for the end
         clearTimeout(this.ringTimer);
         this.ringTimer = setTimeout(() => {
-          if (this.ringWasOn) this.triggerRing('dlouhé zvonění');
+          if (this.ringWasOn) this.triggerRing('long ring');
         }, (this.codeRingMax + 0.5) * 1000);
         return;
       }
 
-      if (!zvoni && predtim && this.ringStartedAt) {
+      if (!ringing && wasRinging && this.ringStartedAt) {
         clearTimeout(this.ringTimer);
-        const delka = (Date.now() - this.ringStartedAt) / 1000;
+        const duration = (Date.now() - this.ringStartedAt) / 1000;
         this.ringStartedAt = 0;
-        if (delka >= this.codeRingMin && delka <= this.codeRingMax) {
-          this.log.info(`Otevřeno kódem (signál ${delka.toFixed(1)} s) — nezvoním.`);
-        } else if (delka < this.codeRingMin) {
-          this.triggerRing(`krátké zvonění, ${delka.toFixed(1)} s`);
+        if (duration >= this.codeRingMin && duration <= this.codeRingMax) {
+          this.log.info(`Opened with code (signal ${duration.toFixed(1)} s) — not ringing.`);
+        } else if (duration < this.codeRingMin) {
+          this.triggerRing(`short ring, ${duration.toFixed(1)} s`);
         }
       }
       return;
@@ -286,19 +286,19 @@ class LaskomexDoorbellPlatform {
 
     if (topic === this.topics.availability) {
       const online = value === this.topics.availablePayload;
-      this.log.info(`Modul je ${online ? 'online' : 'offline'}`);
+      this.log.info(`Module is ${online ? 'online' : 'offline'}`);
     }
   }
 
-  triggerRing(zdroj) {
+  triggerRing(source) {
     if (this.callNumber && this.lastDecoded && this.lastDecoded !== this.callNumber) {
-      this.log.debug(`Volali na ${this.lastDecoded}, ne na ${this.callNumber} — ignoruji.`);
+      this.log.debug(`Call to ${this.lastDecoded}, not ${this.callNumber} — ignoring.`);
       return;
     }
     const now = Date.now();
     if (now - this.lastRingAt < 5000) return;
     this.lastRingAt = now;
-    this.log.info(`Zvonění! (${zdroj})`);
+    this.log.info(`Ring! (${source})`);
 
     if (this.bellIsMotion) {
       this.bellService.updateCharacteristic(Characteristic.MotionDetected, true);
@@ -321,9 +321,9 @@ class LaskomexDoorbellPlatform {
     const sinceRing = (Date.now() - this.lastRingAt) / 1000;
     if (this.warnIfNoRing && sinceRing > this.ringWindowSeconds) {
       this.log.warn(
-        'Otevírám, ale poslední zvonění bylo před ' +
-        (this.lastRingAt ? `${Math.round(sinceRing)} s` : 'nikdy') +
-        '. Digitální domofon otevře jen po vyzvánění z tabla — nejspíš se nic nestane.',
+        'Opening, but the last ring was ' +
+        (this.lastRingAt ? `${Math.round(sinceRing)} s ago` : 'never') +
+        '. A digital intercom only opens after a call from the outdoor panel — this will probably do nothing.',
       );
     }
 
@@ -353,11 +353,11 @@ class LaskomexDoorbellPlatform {
   publish(topic, payload) {
     if (!topic) return;
     if (!this.client || !this.client.connected) {
-      this.log.error(`MQTT není připojené, zahazuji ${topic}`);
+      this.log.error(`MQTT is not connected, dropping ${topic}`);
       return;
     }
     this.client.publish(topic, payload, { qos: 1 }, (err) => {
-      if (err) this.log.error(`Publish na ${topic} selhal: ${err.message}`);
+      if (err) this.log.error(`Publish to ${topic} failed: ${err.message}`);
       else this.log.debug(`→ ${topic}: ${payload}`);
     });
   }
