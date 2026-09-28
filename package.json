@@ -16,6 +16,9 @@
     "url": "https://github.com/kasparek-net/homebridge-laskomex-doorbell/issues"
   },
   "main": "index.js",
+  "scripts": {
+    "test": "node --test"
+  },
   "engines": {
     "node": ">=18.0.0",
     "homebridge": "^1.6.0 || ^2.0.0"
