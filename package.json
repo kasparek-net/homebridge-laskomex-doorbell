@@ -1,0 +1,41 @@
+{
+  "name": "homebridge-laskomex-doorbell",
+  "displayName": "Laskomex Doorbell",
+  "version": "1.5.1",
+  "description": "HomeKit bridge for a Laskomex intercom fitted with an ESPHome smart module: doorbell notifications, door release and do-not-disturb over MQTT",
+  "license": "MIT",
+  "author": {
+    "name": "Jakub Kasparek"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kasparek-net/homebridge-laskomex-doorbell.git"
+  },
+  "homepage": "https://github.com/kasparek-net/homebridge-laskomex-doorbell#readme",
+  "bugs": {
+    "url": "https://github.com/kasparek-net/homebridge-laskomex-doorbell/issues"
+  },
+  "main": "index.js",
+  "engines": {
+    "node": ">=18.0.0",
+    "homebridge": "^1.6.0 || ^2.0.0"
+  },
+  "keywords": [
+    "homebridge-plugin",
+    "homekit",
+    "doorbell",
+    "intercom",
+    "laskomex",
+    "esphome",
+    "mqtt"
+  ],
+  "dependencies": {
+    "mqtt": "^5.10.1"
+  },
+  "files": [
+    "index.js",
+    "config.schema.json",
+    "README.md",
+    "LICENSE"
+  ]
+}

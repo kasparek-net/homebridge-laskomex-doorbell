@@ -1,0 +1,214 @@
+{
+  "pluginAlias": "LaskomexDoorbell",
+  "pluginType": "platform",
+  "singular": true,
+  "headerDisplay": "Vystaví Laskomex domofon s ESPHome modulem do HomeKitu: zvonek, otevírání dveří a režim nerušit přes MQTT.",
+  "footerDisplay": "Topicy jsou předvyplněné podle manuálu Smart Unifon (SW 2.7.2). Měnit jen pokud má modul jiný název než \"smart-unifon\".",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Název",
+        "type": "string",
+        "default": "Domofon",
+        "required": true,
+        "description": "Použije se jako základ jmen v Apple Home (např. „Domofon zvonek“)."
+      },
+      "doorbellType": {
+        "title": "Typ zvonku v HomeKitu",
+        "type": "string",
+        "default": "doorbell",
+        "oneOf": [
+          {
+            "title": "Zvonek (Doorbell) — HomePod oznamuje",
+            "enum": [
+              "doorbell"
+            ]
+          },
+          {
+            "title": "Pohybový senzor (MotionSensor) — HomePod mlčí",
+            "enum": [
+              "motion"
+            ]
+          }
+        ],
+        "description": "HomePod oznamuje zvonky globálně a nejde to vypnout pro jedno příslušenství. Pohybový senzor dá jen notifikaci."
+      },
+      "motionSeconds": {
+        "title": "Délka „pohybu“ při zvonění (s)",
+        "type": "integer",
+        "default": 5,
+        "minimum": 1,
+        "maximum": 60,
+        "condition": {
+          "functionBody": "return model.doorbellType === 'motion';"
+        }
+      },
+      "callNumber": {
+        "title": "Číslo bytu",
+        "type": "integer",
+        "required": false,
+        "description": "Zvonění se ohlásí jen při volání na toto číslo. Prázdné = každé zvonění."
+      },
+      "broker": {
+        "title": "MQTT broker",
+        "type": "object",
+        "properties": {
+          "host": {
+            "title": "Adresa",
+            "type": "string",
+            "required": true,
+            "placeholder": "192.168.1.10"
+          },
+          "port": {
+            "title": "Port",
+            "type": "integer",
+            "default": 1883,
+            "required": true
+          },
+          "username": {
+            "title": "Uživatel",
+            "type": "string",
+            "required": false
+          },
+          "password": {
+            "title": "Heslo",
+            "type": "string",
+            "required": false,
+            "x-schema-form": {
+              "type": "password"
+            }
+          }
+        }
+      },
+      "topics": {
+        "title": "MQTT topicy",
+        "type": "object",
+        "properties": {
+          "ring": {
+            "title": "Zvonění (odběr)",
+            "type": "string",
+            "required": true,
+            "placeholder": "smart-unifon/binary_sensor/doorbell__ring_/state"
+          },
+          "openDoor": {
+            "title": "Otevření dveří (publikace)",
+            "type": "string",
+            "required": false,
+            "placeholder": "smart-unifon/button/open_door/command",
+            "description": "Nech prázdné, pokud zámek v HomeKitu nechceš."
+          },
+          "openDoorPayload": {
+            "title": "Payload pro otevření",
+            "type": "string",
+            "default": "PRESS",
+            "description": "Otevírání je v ESPHome typ \"button\", takže payload je PRESS (ne ON)."
+          },
+          "dndCommand": {
+            "title": "Nerušit — příkaz (publikace)",
+            "type": "string",
+            "required": false,
+            "description": "Nech prázdné, pokud přepínač nerušit nechceš.",
+            "placeholder": "smart-unifon/switch/mute/command"
+          },
+          "dndState": {
+            "title": "Nerušit — stav (odběr)",
+            "type": "string",
+            "required": false,
+            "placeholder": "smart-unifon/switch/mute/state"
+          },
+          "dndOnPayload": {
+            "title": "Payload zapnuto",
+            "type": "string",
+            "default": "ON"
+          },
+          "dndOffPayload": {
+            "title": "Payload vypnuto",
+            "type": "string",
+            "default": "OFF"
+          },
+          "availability": {
+            "title": "Dostupnost modulu (odběr)",
+            "type": "string",
+            "required": false,
+            "placeholder": "smart-unifon/status"
+          },
+          "availablePayload": {
+            "title": "Payload online",
+            "type": "string",
+            "default": "online"
+          },
+          "decoder": {
+            "title": "Číslo volaného bytu (odběr)",
+            "type": "string",
+            "required": false,
+            "placeholder": "smart-unifon/sensor/decoder/state",
+            "description": "Spolu s „Číslo bytu“ odfiltruje volání sousedům."
+          },
+          "decodingSuccessful": {
+            "title": "Úspěšné dekódování (odběr)",
+            "type": "string",
+            "required": false,
+            "placeholder": "smart-unifon/binary_sensor/decoding_successful/state"
+          },
+          "autoOpenCommand": {
+            "title": "Automatické otevírání — příkaz (publikace)",
+            "type": "string",
+            "required": false,
+            "placeholder": "smart-unifon/switch/auto_open_door/command",
+            "description": "Nech prázdné, pokud přepínač automatického otevírání nechceš."
+          },
+          "autoOpenState": {
+            "title": "Automatické otevírání — stav (odběr)",
+            "type": "string",
+            "required": false,
+            "placeholder": "smart-unifon/switch/auto_open_door/state"
+          }
+        }
+      },
+      "ringPayload": {
+        "title": "Payload zvonění",
+        "type": "string",
+        "default": "ON",
+        "description": "Hodnota v ring topicu, která znamená „zvoní“."
+      },
+      "codeRingMinSeconds": {
+        "title": "Otevření kódem — signál od (s)",
+        "type": "number",
+        "default": 8,
+        "description": "Modul hlásí otevření kódem stejně jako zvonění, liší se jen délkou signálu RING. Signál v tomto rozmezí se bere jako kód a ignoruje se."
+      },
+      "codeRingMaxSeconds": {
+        "title": "Otevření kódem — signál do (s)",
+        "type": "number",
+        "default": 10
+      },
+      "relockSeconds": {
+        "title": "Návrat zámku do zamčeno (s)",
+        "type": "integer",
+        "default": 5,
+        "minimum": 1,
+        "maximum": 60,
+        "description": "Domofon otevírá impulsem a stav nehlásí zpět, takže se zámek v HomeKitu po této době sám vrátí."
+      },
+      "ringWindowSeconds": {
+        "title": "Okno po zvonění (s)",
+        "type": "integer",
+        "default": 60,
+        "minimum": 5,
+        "maximum": 600,
+        "description": "Digitální domofon otevře jen krátce po vyzvánění z tabla. Mimo toto okno plugin zapíše varování do logu."
+      },
+      "warnIfNoRing": {
+        "title": "Varovat při otevírání bez zvonění",
+        "type": "boolean",
+        "default": true
+      },
+      "model": {
+        "title": "Model (kosmetika v Apple Home)",
+        "type": "string",
+        "default": "LM-8 smart module"
+      }
+    }
+  }
+}
