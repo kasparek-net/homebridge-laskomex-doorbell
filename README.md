@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/kasparek-net/homebridge-laskomex-doorbell/main/assets/icon.png" width="100" height="100" alt="homebridge-laskomex-doorbell icon">
+</p>
+
 # homebridge-laskomex-doorbell
 
 Brings a Laskomex intercom fitted with the **Smart Unifon** module (the
