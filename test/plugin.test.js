@@ -86,6 +86,7 @@ function makeApi() {
     getService(type) { return this.services.find((s) => s.type === type); }
     addService(type, name) { const s = new hap.Service(type, name); this.services.push(s); return s; }
     removeService(s) { this.services = this.services.filter((x) => x !== s); }
+    updateDisplayName(name) { this.displayName = name; this.renamed = true; }
   };
   api.registerPlatform = (plugin, platform, ctor) => { api.Platform = ctor; };
   api.registerPlatformAccessories = (p, n, list) => api.registered.push(...list);
@@ -204,4 +205,17 @@ test('dnd switch publishes and follows state topic', async () => {
 test('names override default accessory names', () => {
   const { api } = start({ ...baseConfig, names: { doorbell: 'Vchod zvonek', lock: 'Vchod zamek' } });
   assert.deepStrictEqual(api.registered.map((a) => a.displayName).slice(0, 2), ['Vchod zvonek', 'Vchod zamek']);
+});
+
+test('renames cached accessory via updateDisplayName', () => {
+  const api = makeApi();
+  const platform = new api.Platform(makeLog(), baseConfig, api);
+  const lock = new api.platformAccessory('Old Lock', 'uuid:homebridge-laskomex-doorbell:lock');
+  const doorbell = new api.platformAccessory('Vchod Doorbell', 'uuid:homebridge-laskomex-doorbell:doorbell');
+  platform.configureAccessory(lock);
+  platform.configureAccessory(doorbell);
+  api.emit('didFinishLaunching');
+  assert.strictEqual(lock.displayName, 'Vchod Lock');
+  assert.strictEqual(lock.renamed, true);
+  assert.strictEqual(doorbell.renamed, undefined);
 });

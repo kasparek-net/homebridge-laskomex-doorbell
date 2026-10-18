@@ -170,7 +170,7 @@ class LaskomexDoorbellPlatform {
     let accessory = this.accessories.find((a) => a.UUID === uuid);
 
     if (accessory) {
-      accessory.displayName = displayName;
+      if (accessory.displayName !== displayName) accessory.updateDisplayName(displayName);
       this.api.updatePlatformAccessories([accessory]);
     } else {
       accessory = new this.api.platformAccessory(displayName, uuid, category);
@@ -180,7 +180,6 @@ class LaskomexDoorbellPlatform {
     }
 
     accessory.category = category;
-    accessory.displayName = displayName;
     accessory.context.key = key;
 
     const info = accessory.getService(Service.AccessoryInformation);
