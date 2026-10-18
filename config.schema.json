@@ -11,7 +11,6 @@
         "title": "Name",
         "type": "string",
         "default": "Intercom",
-        "required": true,
         "description": "Base for accessory names in the Home app (e.g. \"Intercom Doorbell\")."
       },
       "doorbellType": {
@@ -47,7 +46,6 @@
       "callNumber": {
         "title": "Flat number",
         "type": "integer",
-        "required": false,
         "description": "Only report rings for calls to this flat. Empty = every ring."
       },
       "names": {
@@ -57,23 +55,19 @@
         "properties": {
           "doorbell": {
             "title": "Doorbell",
-            "type": "string",
-            "required": false
+            "type": "string"
           },
           "lock": {
             "title": "Lock",
-            "type": "string",
-            "required": false
+            "type": "string"
           },
           "dnd": {
             "title": "Do not disturb",
-            "type": "string",
-            "required": false
+            "type": "string"
           },
           "autoOpen": {
             "title": "Auto open",
-            "type": "string",
-            "required": false
+            "type": "string"
           }
         }
       },
@@ -84,29 +78,29 @@
           "host": {
             "title": "Host",
             "type": "string",
-            "required": true,
             "placeholder": "192.168.1.10"
           },
           "port": {
             "title": "Port",
             "type": "integer",
-            "default": 1883,
-            "required": true
+            "default": 1883
           },
           "username": {
             "title": "Username",
-            "type": "string",
-            "required": false
+            "type": "string"
           },
           "password": {
             "title": "Password",
             "type": "string",
-            "required": false,
             "x-schema-form": {
               "type": "password"
             }
           }
-        }
+        },
+        "required": [
+          "host",
+          "port"
+        ]
       },
       "topics": {
         "title": "MQTT topics",
@@ -115,13 +109,11 @@
           "ring": {
             "title": "Ring (subscribe)",
             "type": "string",
-            "required": true,
             "placeholder": "smart-unifon/binary_sensor/doorbell__ring_/state"
           },
           "openDoor": {
             "title": "Open door (publish)",
             "type": "string",
-            "required": false,
             "placeholder": "smart-unifon/button/open_door/command",
             "description": "Leave empty if you don't want the lock in HomeKit."
           },
@@ -134,14 +126,12 @@
           "dndCommand": {
             "title": "Do not disturb — command (publish)",
             "type": "string",
-            "required": false,
             "description": "Leave empty if you don't want the do-not-disturb switch.",
             "placeholder": "smart-unifon/switch/mute/command"
           },
           "dndState": {
             "title": "Do not disturb — state (subscribe)",
             "type": "string",
-            "required": false,
             "placeholder": "smart-unifon/switch/mute/state"
           },
           "dndOnPayload": {
@@ -157,7 +147,6 @@
           "availability": {
             "title": "Module availability (subscribe)",
             "type": "string",
-            "required": false,
             "placeholder": "smart-unifon/status"
           },
           "availablePayload": {
@@ -168,30 +157,29 @@
           "decoder": {
             "title": "Called flat number (subscribe)",
             "type": "string",
-            "required": false,
             "placeholder": "smart-unifon/sensor/decoder/state",
             "description": "Used with \"Flat number\" to ignore calls to neighbours."
           },
           "decodingSuccessful": {
             "title": "Decoding successful (subscribe)",
             "type": "string",
-            "required": false,
             "placeholder": "smart-unifon/binary_sensor/decoding_successful/state"
           },
           "autoOpenCommand": {
             "title": "Auto open — command (publish)",
             "type": "string",
-            "required": false,
             "placeholder": "smart-unifon/switch/auto_open_door/command",
             "description": "Leave empty if you don't want the auto-open switch."
           },
           "autoOpenState": {
             "title": "Auto open — state (subscribe)",
             "type": "string",
-            "required": false,
             "placeholder": "smart-unifon/switch/auto_open_door/state"
           }
-        }
+        },
+        "required": [
+          "ring"
+        ]
       },
       "ringPayload": {
         "title": "Ring payload",
@@ -236,6 +224,9 @@
         "type": "string",
         "default": "LM-8 smart module"
       }
-    }
+    },
+    "required": [
+      "name"
+    ]
   }
 }
